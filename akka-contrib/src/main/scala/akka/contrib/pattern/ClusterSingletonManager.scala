@@ -175,11 +175,12 @@ object ClusterSingletonManager {
     class OldestChangedBuffer(role: Option[String]) extends Actor {
       import OldestChangedBuffer._
       import context.dispatcher
+      import immutable.SortedSet
 
       val cluster = Cluster(context.system)
       // sort by age, oldest first
       val ageOrdering = Ordering.fromLessThan[Member] { (a, b) ⇒ a.isOlderThan(b) }
-      var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
+      var membersByAge: SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
       var changes = Vector.empty[AnyRef]
 
@@ -203,7 +204,7 @@ object ClusterSingletonManager {
       }
 
       def handleInitial(state: CurrentClusterState): Unit = {
-        membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.collect {
+        membersByAge = SortedSet.empty(ageOrdering) ++ state.members.collect {
           case m if m.status == MemberStatus.Up && matchingRole(m) ⇒ m
         }
         val initial = InitialOldestState(membersByAge.headOption.map(_.address), membersByAge.size)
